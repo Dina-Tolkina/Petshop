@@ -2,7 +2,6 @@ import uuid
 from PIL import Image
 from django.db import models
 from django.forms import ValidationError
-from phonenumber_field.modelfields import PhoneNumberField
 from django.core.validators import MaxValueValidator
 from decimal import Decimal
 from django.core.validators import RegexValidator
@@ -22,7 +21,7 @@ def validate_image_size(image):
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, verbose_name = ("Пользователь"))
     patronymic = models.CharField(max_length=30, unique=False,verbose_name = ("Отчество"),  validators=[RegexValidator(r'^[a-zA-ZА-Яа-яЁё]+$', 'Разрешены только буквы.')])
-    phone = PhoneNumberField(unique=True, blank=False, verbose_name = ("Номер телефона"))
+    phone = models.CharField(unique=True, blank=False, verbose_name = ("Номер телефона"))
     address = models.CharField(max_length=255, blank=True, verbose_name = ("Адрес"))
     photo_avatar = models.ImageField(upload_to='customer/', blank=True, null=True, verbose_name = ("Фото пользователь"))
 
