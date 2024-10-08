@@ -20,7 +20,7 @@ class createUserForm(forms.ModelForm):
 
 class RegForm(forms.ModelForm):
     patronymic = forms.CharField(label='Отчество', widget=forms.TextInput(attrs={'class': 'form-input'}))
-    phone = forms.CharField(label='Номер телефона', widget=forms.TextInput(attrs={'class': 'form-input', 'pattern': r'(?:\+?[\d]{1,3}[-\.\s]?)?(?:(?:[\(\[])?[\d]{3}(?:[\)\]]|[\.-])[\d]{3})(?:[\.-][\d]{4}|[\.\s]?$)', 'data-mask': "'+7 (ddd) ddd-dd-dd'"}))
+    phone = forms.CharField(label='Номер телефона', widget=forms.TextInput(attrs={'class': 'form-input', 'id': 'phone'}))
     
     class Meta:
         model = Customer
@@ -86,9 +86,9 @@ class EmailLoginForm(forms.Form):
     password = forms.CharField(label='Пароль', widget=forms.PasswordInput(attrs={'class': 'form-input'}))
 
 
-class PaymentForm(forms.Form):
-    amount = forms.FloatField(label='Amount to pay', min_value=0)
-    order_number = forms.CharField(label='Order number', max_length=20)
+# class PaymentForm(forms.Form):
+#     amount = forms.FloatField(label='Amount to pay', min_value=0)
+#     order_number = forms.CharField(label='Order number', max_length=20)
 
 
 
