@@ -20,12 +20,11 @@ class createUserForm(forms.ModelForm):
 
 class RegForm(forms.ModelForm):
     patronymic = forms.CharField(label='Отчество', widget=forms.TextInput(attrs={'class': 'form-input'}))
-    phone = forms.CharField(label='Номер телефона', widget=forms.TextInput(attrs={'class': 'form-input', 'pattern': r'(?:\+?[\d]{1,3}[-\.\s]?)?(?:(?:[\(\[])?[\d]{3}(?:[\)\]]|[\.-])[\d]{3})(?:[\.-][\d]{4}|[\.\s]?$)', 'data-mask': "'+7 (ddd) ddd-dd-dd'"}))
+    phone = forms.CharField(label='Номер телефона', widget=forms.TextInput(attrs={'class': 'form-input', 'id': 'phone'}))
     
     class Meta:
         model = Customer
         fields = ('patronymic', 'phone')
-
 
 
 class CombinedRegForm(forms.Form):
@@ -67,7 +66,6 @@ class CombinedRegForm(forms.Form):
         if User.objects.filter(email=email).exists():
             self.add_error('email', 'Пользователь с такой электронной почтой уже существует.')
 
-
     def clean_password(self):
         password = self.cleaned_data.get('password')
         if len(password) < 8:
@@ -87,20 +85,7 @@ class EmailLoginForm(forms.Form):
 
 
 class PaymentForm(forms.Form):
-    amount = forms.FloatField(label='Amount to pay', min_value=0)
-    order_number = forms.CharField(label='Order number', max_length=20)
-
-
-
-
-
-
-
-
-        
-
-
-
-
-
-
+    card_number = forms.CharField(max_length=16, label='Номер карты')
+    expiration_date = forms.CharField(max_length=5, label='Срок действия (MM/YY)')
+    cvv = forms.CharField(max_length=3, label='CVV')
+    shipping_address = forms.CharField(label='Адрес доставки')
