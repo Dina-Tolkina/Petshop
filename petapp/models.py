@@ -2,7 +2,6 @@ import uuid
 from PIL import Image
 from django.db import models
 from django.forms import ValidationError
-from phonenumber_field.modelfields import PhoneNumberField
 from django.core.validators import MaxValueValidator
 from decimal import Decimal
 from django.core.validators import RegexValidator
@@ -10,6 +9,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from PIL import Image, ImageDraw, ImageFont
+from django.db.models import Sum, F
 
 
 def validate_image_size(image):
@@ -22,7 +22,7 @@ def validate_image_size(image):
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, verbose_name = ("Пользователь"))
     patronymic = models.CharField(max_length=30, unique=False,verbose_name = ("Отчество"),  validators=[RegexValidator(r'^[a-zA-ZА-Яа-яЁё]+$', 'Разрешены только буквы.')])
-    phone = PhoneNumberField(unique=True, blank=False, verbose_name = ("Номер телефона"))
+    phone = models.CharField(unique=True, blank=False, verbose_name = ("Номер телефона"))
     address = models.CharField(max_length=255, blank=True, verbose_name = ("Адрес"))
     photo_avatar = models.ImageField(upload_to='customer/', blank=True, null=True, verbose_name = ("Фото пользователь"))
 
@@ -102,6 +102,17 @@ class Product(models.Model):
         else:
             self.availability = False  
         super(Product, self).save(*args, **kwargs)
+    
+    def reduce_stock(self, quantity):
+        """
+        Метод для уменьшения количества товара на складе.
+        Возвращает True, если уменьшение прошло успешно, иначе False.
+        """
+        if self.stock >= quantity:
+            self.stock -= quantity
+            self.save()  
+            return True
+        return False
 
     def __str__(self):
             return f"{self.product_name} - {self.price} р"
@@ -118,6 +129,10 @@ class Basket(models.Model):
     
     def __str__(self):
         return f"Корзина: {self.user}"
+    
+    def get_total_sum(self):
+        total_sum = self.basketproduct_set.aggregate(total=Sum(F('quantity') * F('product__price')))['total']
+        return total_sum or 0
     
     class Meta:
         verbose_name = ("Корзину")
@@ -153,20 +168,21 @@ class Order(models.Model):
 
 class OrderDetail(models.Model):
     STATUS_CHOICES = [
-        ('created', 'Created'),
-        ('processing', 'Processing'),
-        ('paid', 'Paid'),
-        ('cancelled', 'Cancelled'),
-        ('error', 'Error'),
+        ('created', 'Создано'),
+        ('processing', 'Обработка'),
+        ('paid', 'Оплачено'),
+        ('cancelled', 'Отменено'),
+        ('error', 'Ошибка'),
     ]
 
     order_number = models.UUIDField(default = uuid.uuid4, verbose_name = ("Номер заказа"))
     order = models.OneToOneField(Order, related_name='details', on_delete=models.CASCADE, verbose_name = ("Заказ"))
-    basket = models.ForeignKey(Basket, on_delete=models.CASCADE, verbose_name = ("Корзина"))
     payment_id = models.CharField(max_length=128, blank=True, verbose_name = ("Идентификатор платежа"))
     created_at = models.DateTimeField(auto_now_add=True, verbose_name = ("Дата создания"))
     updated_at = models.DateTimeField(auto_now=True, verbose_name = ("Обновлённая дата ")) 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='created', verbose_name = ("Статус"))
+    basket_items = models.JSONField(verbose_name="Товары из корзины", default=dict)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=("Общая сумма заказа"), default=0)
 
     def __str__(self):
         return f"Деталь {self.id} из заказа {self.order_id}"
@@ -174,14 +190,13 @@ class OrderDetail(models.Model):
     class Meta:
         verbose_name = "Детали заказа"
         verbose_name_plural = "Детали заказов"
-        ordering = ['-order']
+        ordering = ['-created_at']
 
 
 class PurchaseHistory(models.Model):  
     user = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name = ("Пользователь"))
-    order_number = models.ForeignKey(OrderDetail, on_delete=models.CASCADE, verbose_name = ("Номер заказа"))
+    order_detail = models.ForeignKey(OrderDetail, on_delete=models.CASCADE, verbose_name=("Номер заказа"))
     created_at = models.DateTimeField(auto_now_add=True, verbose_name = ("Дата создания"))
-    basket = models.ForeignKey(Basket, on_delete=models.CASCADE, verbose_name = ("Корзина"))
 
     class Meta:
         verbose_name = "История покупок"
