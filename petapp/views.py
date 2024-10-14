@@ -12,7 +12,8 @@ from django.contrib import messages
 from .authentication import EmailAuthBackend
 from django.core.files.base import ContentFile
 from django.db.models import Avg
-from django.http import Http404, HttpResponse
+from django.utils import timezone
+from django.http import JsonResponse
 
 
 # Main navigation pages
@@ -22,16 +23,16 @@ def index(request):
     return render(request, 'petapp/main.html', {'top_rated_products': top_rated_products})
 
 def catalog(request):
-    product_name = Product.objects.all()
+    products = Product.objects.filter(availability=True)
     category = Product.objects.all()
     animal_type = Product.objects.all()
     rating = Rating.objects.all()
 
-    if not Product.objects.exists(): 
+    if not products.exists(): 
         message = "Товаров временно нет"
         return render(request, 'petapp/catalog.html', {'message': message})
 
-    return render(request, 'petapp/catalog.html', {'products': product_name, 'category' : category, 'animal_type' : animal_type, 'rating' : rating})
+    return render(request, 'petapp/catalog.html', {'products': products, 'category' : category, 'animal_type' : animal_type, 'rating' : rating})
 
 def contact(request):
     return render(request, 'petapp/contact.html')
@@ -114,32 +115,34 @@ def logout_view(request):
 @login_required
 def basket(request):
     customer = Customer.objects.get(user=request.user)
+
     if not Basket.objects.filter(user=customer).exists():
         basket = Basket.objects.create(user=customer)
+
     basket = Basket.objects.get(user=customer)
     basket_items = BasketProduct.objects.filter(basket=basket).order_by('product_id')
+
     basket_total = 0
-    for a in basket_items:
-        basket_total += int(a.quantity) * int(a.product.price)
+    unavailable_products = []
 
-    if request.method == 'POST':
-        form = PaymentForm(request.POST)
-        if form.is_valid():
-            amount = basket_total
+    for basket_product in basket_items:
+        quantity = basket_product.quantity
+        product = basket_product.product
 
-            order_detail = OrderDetail.objects.create(
-                amount=amount,
-                basket=basket
-            )
-            order = Order.objects.create(
-                user=customer,
-                details=order_detail
-            )
-            return redirect('buy', order_num=order.id)
-    else:
-        form = PaymentForm()
+        if product.stock < quantity:
+            unavailable_products.append(product.product_name)
 
-    return render(request, 'petapp/basket.html', {"basket_items": basket_items, "basket_total": basket_total, "basket": basket, 'form': form})
+        basket_total += int(quantity) * int(product.price)
+
+    if unavailable_products:
+        messages.error(request, f"Товар(ы) временно отсутствуют: {', '.join(unavailable_products)}")
+
+    return render(request, 'petapp/basket.html', {
+        "basket_items": basket_items,
+        "basket_total": basket_total,
+        "basket": basket,
+    })
+
 
 @login_required
 def add_basket(request, pk):
@@ -179,6 +182,7 @@ def subtraction_basket(request, product, basket):
         basket_items = BasketProduct.objects.filter(pk=product, basket_id=basket).update(quantity = int(basket_product.quantity) - 1)
     return redirect("basket")
 
+
 #User page
 def user(request):
     if request.user.is_authenticated:
@@ -194,7 +198,9 @@ def user(request):
     for a in basket_items:
         basket_total += int(a.quantity) * int(a.product.price)
         total_items += a.quantity 
-    return render(request, 'petapp/user.html', {'user': user, 'customer': customer,"basket_total": basket_total, 'total_items': total_items})
+
+    total_items_order = Order.objects.filter(customer=customer).count()
+    return render(request, 'petapp/user.html', {'user': user, 'customer': customer,"basket_total": basket_total, 'total_items': total_items, 'total_items_order': total_items_order})
 
 def user_edit(request):
     if request.user.is_authenticated:
@@ -266,71 +272,148 @@ def user_edit(request):
     return render(request, 'petapp/user_edit.html', {'user': user, 'customer': customer})
 
 
+#Payment, orders  page 
+def calculate_total_price(basket_items):
+    """
+    Функция для расчета общей суммы на основе списка товаров в корзине.
+    """
+    total = 0
+    for item in basket_items:  
+        quantity = item.quantity 
+        price = item.product.price  
+        total += quantity * price
+    return total
 
-    order = Order.objects.filter(id=order_num).first()
-    if order and order.details:
-        uuids = uuid.uuid4()
-        payment = Payment.create({
-            "amount": {
-                "value": str(order.details.amount),
-                "currency": "RUB"
-            },
-            "confirmation": {
-                "type": "redirect",
-                "return_url": f"http://127.0.0.1:8000/basket/buy/{order.id}/confirm-buy/"
-            },
-            "capture": True,
-            "description": f"Заказ {order.id}"
-        }, uuids)
 
-        payment_id = payment.id
-        order.details.payment_id = payment_id
-        order.details.status = 'processing'
-        order.details.save()
+@login_required
+def create_payment(request, basket_id):
+    basket = get_object_or_404(Basket, id=basket_id)
+    form = PaymentForm()
 
-        return redirect(f'https://yoomoney.ru/checkout/payments/v2/contract?orderId={payment_id}')
-    else:
-        # Обработка случая, когда заказ не найден или не имеет деталей
-        return HttpResponse("Заказ не найден или не имеет деталей")
-    
+    available_basket_items = []
+    unavailable_products = []
 
-    order = Order.objects.filter(order_number=pk).first()
-    payment = Payment.find_one(OrderDetail.payment_id)
-    
-    if payment.description == f"Заказ {order.id}" and order.order_number == pk and request.user == order.user:
-        if payment.status == "succeeded":
-            error = False
-            OrderDetail.status = 'paid'
-            order.save()
-            basket = get_object_or_404(Basket, user=request.user)
-            basket_items = BasketProduct.objects.filter(basket=basket).order_by('product_id')
-            
-            for item in basket_items:
-                product = Product.objects.get(pk=item.product.pk)
-                if PurchaseHistory.objects.filter(order_number=order, product=product).exists():
-                    break
-                else:
-                    PurchaseHistory.objects.create(order_number=order, user=request.user, product=product, quantity=item.quantity)
-                    
-                purchase = PurchaseHistory.objects.get(order_number=order, product=product)
-                
-                
-                product_detail = Product.objects.filter(user__isnull=True, product=product)[:item.quantity]
-                
-                for pr_det in product_detail:
-                    purchase.details.add(pr_det)
-                    pr_det.user = request.user
-                    pr_det.save()
-                if product.stock - item.quantity == 0:
-                    product.availability = True
-                else:
-                    product.stock = product.stock - item.quantity
-                product.save()
+    for basket_product in basket.basketproduct_set.all():
+        quantity = basket_product.quantity
+        product = basket_product.product
 
-            basket.delete()           
-            return redirect('profile')
+        if product.stock < quantity:
+            unavailable_products.append(product.product_name)
+            basket_product.delete() 
         else:
-            error = True
-            return render(request, 'petapp/confirm.html', {'basket_items': basket_items, 'error':error})
-    raise Http404("Произошла ошибка" )
+            available_basket_items.append(basket_product)
 
+    if unavailable_products:
+        error_message = f"Следующие товары временно отсутствуют и были удалены из корзины: {', '.join(unavailable_products)}."
+        messages.error(request, error_message)
+        return render(request, 'petapp/basket.html', {
+            'basket': basket, 
+            'unavailable_products': unavailable_products
+        })
+
+    if request.method == 'POST':
+        form = PaymentForm(request.POST)
+        if form.is_valid():
+            order = Order.objects.create(
+                customer=basket.user,
+                order_date=timezone.now().date(),
+                shipping_address=form.cleaned_data['shipping_address']
+            )
+
+            basket_items_data = [
+                {
+                    'product_id': item.product.id,
+                    'product_name': item.product.product_name,
+                    'quantity': item.quantity,
+                    'price': item.product.price,
+                    'photo_url': item.product.photo_product.url,  
+                }
+                for item in available_basket_items
+            ]
+
+            order_detail = OrderDetail.objects.create(
+                order=order,
+                order_number=uuid.uuid4(),
+                status='created',
+                basket_items={'products': basket_items_data},  
+                total_price=calculate_total_price(available_basket_items)  
+            )
+
+            order_detail.status = 'paid'
+            order_detail.payment_id = "TEST_PAYMENT_12345"  
+            order_detail.save()
+
+            BasketProduct.objects.filter(basket=basket, product__in=[item.product for item in available_basket_items]).delete()
+
+            for basket_product in available_basket_items:
+                basket_product.product.reduce_stock(basket_product.quantity)
+
+            PurchaseHistory.objects.create(
+                user=request.user.customer,
+                order_detail=order_detail
+            )
+
+            return redirect('payment_confirmation', order_detail_id=order_detail.id)
+
+    return render(request, 'petapp/payment_page.html', {'form': form, 'basket': basket})
+
+
+def payment_confirmation(request, order_detail_id):
+    order_detail = get_object_or_404(OrderDetail, id=order_detail_id)
+
+    return render(request, 'petapp/payment_confirmation.html', {'order_detail': order_detail})
+
+
+@login_required
+def user_orders(request):
+    customer = request.user.customer
+    orders = Order.objects.filter(customer=customer).order_by('-order_date', '-id')
+    total_items = orders.count()
+
+    rated_products = Rating.objects.filter(user=customer).select_related('product')
+    rated_products_dict = {rating.product.id: rating.rating for rating in rated_products}
+
+    if request.method == 'POST':
+        product_id = request.POST.get('product_id')
+        rating_value = request.POST.get('rating_value')
+
+        if product_id and rating_value:
+            try:
+                product = Product.objects.get(id=product_id)
+            except Product.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Этот продукт больше не доступен в магазине.'
+                }, status=400)
+
+            rating, created = Rating.objects.get_or_create(
+                user=customer,
+                product=product,
+                purchase_history=PurchaseHistory.objects.filter(user=customer).first()
+            )
+            rating.rating = rating_value
+            rating.save()
+
+            return JsonResponse({
+                'success': True,
+                'product_name': product.product_name,
+                'message': f'Рейтинг для продукта {product.product_name} обновлен!'
+            })
+
+        return JsonResponse({
+            'success': False,
+            'message': 'Недопустимые данные.'
+        }, status=400)
+
+    for order in orders:
+        basket_items = order.details.basket_items
+        if 'products' in basket_items:
+            for item in basket_items['products']:
+                item['total_price'] = item['quantity'] * item['price']
+                item['photo_url'] = item.get('photo_url', '')
+                item['is_rated'] = item['product_id'] in rated_products_dict
+                item['rating'] = rated_products_dict.get(item['product_id'], None)
+                product_exists = Product.objects.filter(id=item['product_id']).exists()
+                item['is_exist'] = product_exists
+
+    return render(request, 'petapp/user_orders.html', {'orders': orders, 'total_items': total_items})
