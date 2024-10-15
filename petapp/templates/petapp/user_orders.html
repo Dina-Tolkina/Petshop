@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'petapp/page/user_orderspage/css/user_orders.css' %}">
+{% endblock %}
+
+{% block title %}Мои заказы{% endblock %}
+
+<!-- Content -->
+{% block content %}
+<!-- Section - user_orders -->
+<section class="user_orders">
+    <div class="container_user_orders">
+        <h1>Мои заказы</h1>
+        <h2 class="total-orders">Всего заказов: {{ total_items }}</h2>
+
+        {% for order in orders %}
+        <div class="item__order">
+            <h2>Заказ №{{ order.id }} от {{ order.order_date }}</h2>
+            <p>Статус: {{ order.details.get_status_display }}</p>
+            
+            <h3>Товары:</h3>
+            {% for item in order.details.basket_items.products %}
+    <div class="item__description">
+        <img src="{{ item.photo_url }}" alt="{{ item.product_name }}">
+        <p>{{ item.product_name }} - {{ item.quantity }} шт.</p>
+        <p>Цена за единицу: {{ item.price }} р</p>
+        <p>Общая цена: {{ item.total_price }} р</p>
+
+        <p>Ваша оценка:</p>
+        <form method="post" class="rating_form">
+                        {% csrf_token %}
+                        <input type="hidden" name="product_id" value="{{ item.product_id }}">
+
+                        {% if item.is_exist %}
+                            <!-- Товар существует, можно ставить оценку -->
+                            <div class="rating__group">
+                                <input class="rating__star" type="radio" name="rating_value" value="1" 
+                                    {% if item.rating == 1 %}checked{% endif %} aria-label="Ужасно">
+                                <input class="rating__star" type="radio" name="rating_value" value="2" 
+                                    {% if item.rating == 2 %}checked{% endif %} aria-label="Сносно">
+                                <input class="rating__star" type="radio" name="rating_value" value="3" 
+                                    {% if item.rating == 3 %}checked{% endif %} aria-label="Нормально">
+                                <input class="rating__star" type="radio" name="rating_value" value="4" 
+                                    {% if item.rating == 4 %}checked{% endif %} aria-label="Хорошо">
+                                <input class="rating__star" type="radio" name="rating_value" value="5" 
+                                    {% if item.rating == 5 %}checked{% endif %} aria-label="Отлично">
+                            </div>
+                            <button type="submit" class="rating_submit_button">Оценить</button>
+                        {% else %}
+                            <!-- Если товар не существует в магазине -->
+                            <p class="rating_unavailable">Оценка недоступна для этого продукта, он больше не продается.</p>
+                        {% endif %}
+                    </form>
+                </div>
+            {% endfor %}
+
+            <h3>Общая стоимость: {{ order.details.total_price }} р</h3>
+        </div>
+        {% empty %}
+            <h3 class="error-text">У вас пока нет заказов.</h3>
+        {% endfor %}
+    </div>
+</section>
+
+<script src="{% static 'petapp/page/user_orderspage/js/user_orders.js' %}" type="module"></script>
+{% endblock %}
