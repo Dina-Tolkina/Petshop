@@ -15,7 +15,7 @@
   <section class="products">
     <h2>Каталог</h2>
       {% if message %}
-        <p style="padding-top: 90px;">{{ message }}</p>
+        <h3 class="error-text">{{ message }}</h3>
       {% else %}
         <div class="p__wrapper">
           {% for product in products %}
