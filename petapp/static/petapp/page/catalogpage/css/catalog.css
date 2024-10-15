@@ -1,1 +1,10 @@
-/*# sourceMappingURL=catalog.css.map */
+h3.error-text {
+    display: flex; 
+    font-family: "Gravity Regular", sans-serif;
+    font-size: 32px;
+    margin-top: 10rem;
+    color: var(--five-text-color);
+    padding-bottom: 5.5rem;
+    align-items: center; 
+    justify-content: center;
+  }/*# sourceMappingURL=catalog.css.map */
