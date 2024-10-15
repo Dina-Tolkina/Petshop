@@ -49,13 +49,13 @@
   <section class="delivery user-box">
     <h3 class="delivery-title">Мои доставки</h3>
     <div class="delivery-descript">
-      <p class="descript-amount">{{ total_items }} заказа</p>
+      <p class="descript-amount">{{ total_items_order }} заказа</p>  
     </div>
-    <!-- need replace href -->
-    <a href="{% url 'basket' %}">
+    <a href="{% url 'user_orders' %}">
       <input type="button" class="delivery-button" value="Подробнее">
     </a>
   </section>
+
 </div>
 
 {% endblock %}
