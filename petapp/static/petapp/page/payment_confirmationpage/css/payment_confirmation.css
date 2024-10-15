@@ -1,0 +1,20 @@
+.payment { 
+    padding-bottom: 15.5rem;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+}
+.payment h1,h2 {
+    margin-top: 4rem;
+    margin-bottom: 1rem;
+    font-size: 24px;
+    text-align: center;
+    font-family: "Gravity Regular", sans-serif;
+}
+p {
+    padding-top: 1rem;
+    font-size: 1.3rem;
+    font-family: "Gravity Regular", sans-serif;
+    color: var(--five-text-color);
+}
