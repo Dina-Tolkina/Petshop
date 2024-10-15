@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'petapp/page/payment_confirmationpage/css/payment_confirmation.css' %}">
+{% endblock %}
+
+{% block title %}Подтверждение платежа{% endblock %}
+
+<!-- Content -->
+{% block content %}
+
+<!-- Section - payment -->
+<div class="parralax-wrap">
+<section class="payment">
+    <h1>Подтверждение платежа</h1>
+    <div class="payment-confirmation">
+        <h2>Ваш платёж успешно обработан!</h2>
+        <p>Номер заказа: {{ order_detail.order_number }}</p>
+        <p>Статус: {{ order_detail.get_status_display }}</p>
+        <p>Идентификатор платежа: {{ order_detail.payment_id }}</p>
+        <p>Адрес доставки: {{ order_detail.order.shipping_address }}</p>
+    </div>
+</div>
+</section>
+</div>
+{% endblock %}
