@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'petapp/page/paymentpage/css/payment.css' %}">
+{% endblock %}
+
+{% block title %}Оформление заказа{% endblock %}
+
+<!-- Content -->
+{% block content %}
+
+<!-- Section - order -->
+<div class="parralax-wrap">
+    <section class="order">
+        <form method="POST" class="order">
+            <h3>Оформление заказа(Тест)</h3>
+            {% csrf_token %}
+            {% for field in form %}
+              <div class="order__item">
+                <p>{{ field.errors }}</p>
+                  <label for="{{ field.id_for_label }}" class="item__label">{{ field.label }}</label>
+                  {{ field }}
+              </div>
+            {% endfor %}
+            <input type="submit" value="Оплатить" class="btn-order">
+        </form>
+    </section>
+</div>
+{% endblock %}
