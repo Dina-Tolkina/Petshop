@@ -2,20 +2,21 @@
 {% load static %}
 
 {% block head %}
-
 <link rel="stylesheet" href="{% static 'petapp/page/basketpage/css/basket.css' %}">
-
 {% endblock %}
 
 {% block title %}Моя корзина{% endblock %}
 
-<!-- Content -->
 {% block content %}
-
-<!-- Section - basket -->
 <section class="basket products">
   <h2>Моя корзина</h2>
-    {% if basket_items %}
+
+  <!-- Вывод сообщений об ошибках в верхней части корзины -->
+  {% for message in messages %}
+      <div class="alert alert-danger">{{ message }}</div>
+  {% endfor %}
+
+  {% if basket_items %}
   <div class="p__wrapper">
     {% for item in basket_items %}
     <div class="p__item">
@@ -31,29 +32,29 @@
             <p class="item__name">Количество: {{ item.quantity }}</p>
             <div class="quantity-buttons">
                 <a id="btn" href="{% url 'subtraction_basket' product=item.pk basket=basket.pk %}" class="btn btn-white border-secondary bg-white btn-md mb-2">-<i class="fas fa-sync"></i></a>
-                <a href="{% url 'addition_basket' product=item.pk basket=basket.pk %}" id="btn" class="btn btn-white border-secondary bg-white btn-md mb-2">+<i class="fas fa-trash"></i></a>
+                <a href="{% url 'addition_basket' product=item.pk basket=basket.pk %}" id="btn" class="btn btn-white border-secondary bg-secondary btn-md mb-2">+<i class="fas fa-trash"></i></a>
             </div>
         </div>
-
-        
-        <!-- <div class="rating__group">
-          <input class="rating__star" type="radio" value="1" aria-label="Ужасно">
-          <input class="rating__star" type="radio" value="2" aria-label="Сносно">
-          <input class="rating__star" type="radio" value="3" aria-label="Нормально">
-          <input class="rating__star" type="radio" value="4" aria-label="Хорошо">
-          <input class="rating__star" type="radio" value="5" aria-label="Отлично">
-        </div> -->
-        </div>
-        {% for message in messages %}
-        <div class="form-error">{{ message }}</div>
-          {% endfor %}
       </div>
-      {% endfor %}
     </div>
-    {% else %}
+    {% endfor %}
+  </div>
+  <div class="basket-summary">
+    <hr class="divider">
+    <div>
+      <span class="total-label">Итого: {{ basket.get_total_sum }} ₽</span>
+      {% if not messages %}
+        <a href="{% url 'create_payment' basket.id %}" class="order-button">Оформить заказ</a>
+      {% else %}
+        <a class="order-button" disabled>Товар(ы) отсутствуют</a>
+      {% endif %}
+
+    </div>
+  </div>
+  {% else %}
     <h3 class="empty-text">Ваша корзина пуста</h3>
   {% endif %}
-  </div>
 </section>
+
 <script src="{% static 'petapp/page/basketpage/js/basket.js' %}" type="module"></script>
 {% endblock %}
