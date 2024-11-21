@@ -36,15 +36,16 @@
 - **PostgreSQL** - для хранения данных о пользователях, товарах, заказах и рейтингах.
 
 ## Как установить и запустить
-Для начала нужно сделать git clone
+### Установка и запуск (локально на ПК)
+1. Для начала нужно сделать git clone
   ```sh
   $ git clone https://github.com/Dina-Tolkina/Petshop.git
   ```
-Создать venv
+2. Создать venv
   ```sh
   $ python -m venv venv
   ```
-Активация виртуальной среды:
+3. Активация виртуальной среды:
 - Для Windows:
   ```sh
   $ venv\Scripts\activate
@@ -53,26 +54,62 @@
   ```sh
   $ source venv/bin/activate
   ```
-Установка зависимостей:
+4. Установка зависимостей:
   ```sh
   $ pip install -r requirements.txt
   ```
-Создать файл .env
-  ```sh
-  $
-    DB_NAME=database_name
-    DB_USER=username
-    DB_PASSWORD=password
-    DB_HOST=db
-    DB_PORT=5432
-  ```
-Сборка и запуск контейнера с помощью docker-compose
+5. Настройка базы данных:
+    - Создать файл .env
+    - Указать настройки базы данных в файле .env
+    ```sh
+    $ DB_NAME=database_name
+      DB_USER=username
+      DB_PASSWORD=password
+      DB_HOST=db
+      DB_PORT=5432
+    ```
+    - Применить миграции:
+   ```sh
+   python manage.py migrate
+   ```
+6. Запуск команды для создания суперпользователя
+     ```sh
+    $ python manage.py createsuperuser
+    ```
+7. Запуск сервера:
+   ```sh
+    $ python manage.py runserver
+    ```
+   - Открыть веб-браузер и перейти по адресу [http://127.0.0.1:8000/](http://127.0.0.1:8000/), чтобы открыть главную страницу сайта:
+   - Для входа в административную панель использовать [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/).  
+    Ввести учетные данные суперпользователя, созданного ранее через команду createsuperuser. 
+### Установка и запуск с помощью Docker
+1. Сборка и запуск контейнера с помощью docker-compose
   ```sh
   $ docker-compose up --build
   ```
-Документация по API будет доступна по адресу: [http://localhost:8000/docs](http://localhost:8000/docs)
-
-Остановка контейнеров
-  ```sh
-  docker-compose down
+2.  Настройка базы данных:
+    - Создать файл .env
+    - Указать настройки базы данных в файле .env
+    ```sh
+    $ DB_NAME=database_name
+      DB_USER=username
+      DB_PASSWORD=password
+      DB_HOST=db
+      DB_PORT=5432
+    ```
+3. Запуск команды для создания суперпользователя:
+   ```sh
+   $ docker exec -it petshop-master-web-1 python manage.py createsuperuser
+   ```
+4. Запуск сервера:
+    ```sh
+    $ python manage.py runserver
+    ```
+   - Открыть веб-браузер и перейти по адресу [http://127.0.0.1:8000/](http://127.0.0.1:8000/), чтобы открыть главную страницу сайта:
+   - Для входа в административную панель использовать [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/).  
+    Ввести учетные данные суперпользователя, созданного ранее через команду createsuperuser. 
+5. Остановка контейнеров
+```sh
+   $ docker-compose down
   ```
