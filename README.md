@@ -100,7 +100,7 @@
     ```
 3. Запуск команды для создания суперпользователя:
    ```sh
-   docker exec -it petshop-master-web-1 python manage.py createsuperuser
+   docker-compose exec web python manage.py createsuperuser
    ```
 4. Запуск сервера:
     ```sh
