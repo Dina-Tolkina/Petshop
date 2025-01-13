@@ -39,30 +39,30 @@
 ### Установка и запуск (локально на ПК)
 1. Клонирование репозитория
   ```sh
-  $ git clone https://github.com/Dina-Tolkina/Petshop.git
+  git clone https://github.com/Dina-Tolkina/Petshop.git
   ```
 2. Создать venv
   ```sh
-  $ python -m venv venv
+  python -m venv venv
   ```
 3. Активация виртуальной среды:
 - Для Windows:
   ```sh
-  $ venv\Scripts\activate
+  venv\Scripts\activate
   ```
 - Для Unix или MacOS:
   ```sh
-  $ source venv/bin/activate
+  source venv/bin/activate
   ```
 4. Установка зависимостей:
   ```sh
-  $ pip install -r requirements.txt
+  pip install -r requirements.txt
   ```
 5. Настройка базы данных:
     - Создать файл .env
     - Указать настройки базы данных в файле .env
     ```sh
-    $ DB_NAME=database_name
+      DB_NAME=database_name
       DB_USER=username
       DB_PASSWORD=password
       DB_HOST=db
@@ -74,11 +74,11 @@
    ```
 6. Запуск команды для создания суперпользователя
      ```sh
-    $ python manage.py createsuperuser
+    python manage.py createsuperuser
     ```
 7. Запуск сервера:
    ```sh
-    $ python manage.py runserver
+    python manage.py runserver
     ```
    - Открыть веб-браузер и перейти по адресу [http://127.0.0.1:8000/](http://127.0.0.1:8000/), чтобы открыть главную страницу сайта:
    - Для входа в административную панель использовать [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/).  
@@ -86,13 +86,13 @@
 ### Установка и запуск с помощью Docker
 1. Сборка и запуск контейнера с помощью docker-compose
   ```sh
-  $ docker-compose up --build
+  docker-compose up --build
   ```
 2.  Настройка базы данных:
     - Создать файл .env
     - Указать настройки базы данных в файле .env
     ```sh
-    $ DB_NAME=database_name
+      DB_NAME=database_name
       DB_USER=username
       DB_PASSWORD=password
       DB_HOST=db
@@ -100,16 +100,16 @@
     ```
 3. Запуск команды для создания суперпользователя:
    ```sh
-   $ docker exec -it petshop-master-web-1 python manage.py createsuperuser
+   docker exec -it petshop-master-web-1 python manage.py createsuperuser
    ```
 4. Запуск сервера:
     ```sh
-    $ python manage.py runserver
+    python manage.py runserver
     ```
    - Открыть веб-браузер и перейти по адресу [http://127.0.0.1:8000/](http://127.0.0.1:8000/), чтобы открыть главную страницу сайта:
    - Для входа в административную панель использовать [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/).  
     Ввести учетные данные суперпользователя, созданного ранее через команду createsuperuser. 
 5. Остановка контейнеров
 ```sh
-   $ docker-compose down
+   docker-compose down
   ```
